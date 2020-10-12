@@ -1,87 +1,95 @@
-## Version 2.0 - Essentials
-## docker build -t darkc0de/mypentestlab:essentials .
-## docker run --rm -it darkc0de/mypentestlab:essentials
-## Image size: 556 MB
+# My Dockerfile
 
+# Image - Base Image
+FROM kalilinux/kali-rolling:latest as base
 
+## Update
+RUN apt-get update -y
 
-####### Base Image Starts Here ----------------------
-FROM ubuntu:18.04 AS builder
-MAINTAINER darkc0de
+# Image - essentials Image
+FROM base as essentials
 
-
-RUN apt-get update
-
-# Environment Variables
-ENV HOME /root
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Working Directory
-WORKDIR /root
-RUN mkdir ${HOME}/tools && \
-    mkdir -p /usr/share/wordlists
-###### Base Images Ends Here ----------------------
-
-###### Essential image starts here ----------------------
-FROM builder AS essentials
-
-# Install Essentials
-RUN apt-get install -y --no-install-recommends \
+## Install essential packages
+RUN \
+    apt-get install -y --no-install-recommends \
     build-essential \
-    iputils-ping\
-    git \
-    vim \
-    wget \
-    curl \
-    make \
-    python \
-    python-pip \
-    python3 \
-    python3-pip \
-    perl \
-    net-tools \
-    zsh \
-    nano \
-    tmux
-
-###### Essential image ends here ----------------------
-
-
-###### Basic tools image starts here ----------------------
-FROM essentials AS basictools
-
-## Basic Tools installation
-
-RUN apt-get install -y --no-install-recommends \
-    rlwrap\
-    ftp\
-    openvpn \
-    traceroute \
-    whois \
-    host \
+    tmux \
+    gcc \
     htop \
     dnsutils \
-    figlet \
+    net-tools \
     tcpdump \
     telnet \
+    rlwrap \
+    iputils-ping \
+    git \
+    zsh \
+    curl \
     unzip \
     p7zip-full \
     locate \
     tree \
+    openvpn \
+    vim \
+    wget \
+    ftp \
+    python3 \
+    python \
+    python3-pip \
+    make \
+    nano
+
+# Image - tools Image
+FROM essentials as tools
+RUN \
+    apt-get install -y --no-install-recommends \
     nmap \
+    masscan \
     nikto \
     netcat \
     cewl \
-    openssh-server \
-    gcc \
-    powerline
+    traceroute \
+    whois \
+    host    
 
-## zsh
-RUN git clone https://github.com/robbyrussell/oh-my-zsh.git ~/.oh-my-zsh && \
-    cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc && \
-    chsh -s /bin/zsh && \
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$HOME/.zsh-syntax-highlighting" --depth 1 && \
-    echo "source $HOME/.zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> "$HOME/.zshrc"
+### Install tools from github
+RUN mkdir -p /root/tools
+WORKDIR /root/tools/
 
-WORKDIR ${HOME}/tools
-CMD /bin/zsh
+#### Download Sublist3r
+RUN	git clone --depth 1 https://github.com/aboul3la/Sublist3r.git
+
+###Oh My Zsh
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+### Download Autorecon Dependency
+
+RUN apt-get install -y --no-install-recommends enum4linux gobuster nbtscan onesixtyone oscanner smbclient smbmap smtp-user-enum snmp sslscan sipvicious tnscmd10g whatweb wkhtmltopdf
+
+### Metasploit
+RUN apt-get install -y --no-install-recommends metasploit-framework exploitdb
+
+### Sqlmap, John
+RUN apt-get install -y --no-install-recommends sqlmap john
+
+### Seclist
+#RUN apt-get install -y --no-install-recommends seclists
+
+### Autorecon
+RUN git clone --depth 1 https://github.com/Tib3rius/AutoRecon.git
+WORKDIR /root/tools/AutoRecon/
+RUN python3 -m pip install -r requirements.txt
+WORKDIR /root/tools/
+
+### Impacket
+RUN git clone --depth 1 https://github.com/SecureAuthCorp/impacket.git && cd impacket \
+    pip3 install . && python3 setup.py install
+
+### Mobile Tools
+RUN apt-get install -y --no-install-recommends jadx apktool
+
+## Cleaning
+RUN	apt-get clean && rm -rf /var/lib/apt/lists/*
+
+## Last command
+ENTRYPOINT /bin/zsh
