@@ -88,6 +88,10 @@ RUN git clone --depth 1 https://github.com/SecureAuthCorp/impacket.git && cd imp
 ### Mobile Tools
 RUN apt-get install -y --no-install-recommends jadx apktool
 
+### PIP Requests
+RUN pip3 install requests
+
+
 ## Cleaning
 RUN	apt-get clean && rm -rf /var/lib/apt/lists/*
 
